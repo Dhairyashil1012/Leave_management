@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Employee Leave Management</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Bootstrap CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body {
+      background-color: #f4f6f9;
+    }
+    .card {
+      border-radius: 12px;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ================= LOGIN PAGE ================= -->
+
+<div class="container mt-5" id="loginPage">
+  <div class="row justify-content-center">
+    <div class="col-md-4">
+      <div class="card shadow p-4">
+        <h4 class="text-center mb-4">Admin Login</h4>
+
+        <input type="text" id="username" class="form-control mb-3" placeholder="Username">
+        <input type="password" id="password" class="form-control mb-3" placeholder="Password">
+
+        <button class="btn btn-primary w-100" onclick="login()">Login</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= DASHBOARD ================= -->
+
+<div class="container mt-4 hidden" id="dashboard">
+
+  <h3 class="mb-4">Employee Leave Dashboard</h3>
+
+  <div class="row">
+
+    <!-- ADD EMPLOYEE -->
+    <div class="col-md-4">
+      <div class="card shadow p-3 mb-4">
+        <h5>Add Employee</h5>
+
+        <input type="text" id="empId" class="form-control mb-2" placeholder="Employee ID">
+        <input type="text" id="empName" class="form-control mb-2" placeholder="Employee Name">
+        <input type="number" id="empLeave" class="form-control mb-2" placeholder="Total Leave Allowed">
+
+        <button class="btn btn-success w-100">Add Employee</button>
+      </div>
+    </div>
+
+    <!-- ADD LEAVE -->
+    <div class="col-md-4">
+      <div class="card shadow p-3 mb-4">
+        <h5>Add Leave</h5>
+
+        <select id="leaveEmployee" class="form-control mb-2">
+          <option>Select Employee</option>
+        </select>
+
+        <input type="date" class="form-control mb-2">
+
+        <select class="form-control mb-2">
+          <option>Full Day</option>
+          <option>Half Day</option>
+        </select>
+
+        <input type="text" class="form-control mb-2" placeholder="Reason">
+
+        <button class="btn btn-warning w-100">Add Leave</button>
+      </div>
+    </div>
+
+    <!-- VIEW SUMMARY -->
+    <div class="col-md-4">
+      <div class="card shadow p-3 mb-4">
+        <h5>View Summary</h5>
+
+        <select id="summaryEmployee" class="form-control mb-2">
+          <option>Select Employee</option>
+        </select>
+
+        <button class="btn btn-info w-100 mb-3">Get Summary</button>
+
+        <div class="border p-2 bg-light">
+          <p><strong>Total Allowed:</strong> --</p>
+          <p><strong>Total Taken:</strong> --</p>
+          <p><strong>Remaining:</strong> --</p>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+
+const API_URL = "https://script.google.com/macros/s/AKfycbwnLuWZys6dXpare_Vdi98v8tE-zAPblZMbRwHKN7urUznF7SkeC8BAbR4HSNbi_96Tuw/exec";
+
+/* ================= LOGIN ================= */
+
+function login() {
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+
+  fetch(API_URL + "?action=login", {
+    method: "POST",
+    body: JSON.stringify({ username, password })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      document.getElementById("loginPage").classList.add("hidden");
+      document.getElementById("dashboard").classList.remove("hidden");
+      loadEmployees();
+    } else {
+      alert("Login Failed");
+    }
+  });
+}
+
+/* ================= LOAD EMPLOYEES ================= */
+
+function loadEmployees() {
+  fetch(API_URL + "?action=getEmployees")
+    .then(res => res.json())
+    .then(data => {
+      const leaveSelect = document.getElementById("leaveEmployee");
+      const summarySelect = document.getElementById("summaryEmployee");
+
+      leaveSelect.innerHTML = "";
+      summarySelect.innerHTML = "";
+
+      data.forEach(emp => {
+        const option1 = new Option(emp.name + " (" + emp.employeeId + ")", emp.employeeId);
+        const option2 = new Option(emp.name + " (" + emp.employeeId + ")", emp.employeeId);
+
+        leaveSelect.add(option1);
+        summarySelect.add(option2);
+      });
+    });
+}
+
+/* ================= ADD EMPLOYEE ================= */
+
+document.querySelector(".btn-success").addEventListener("click", function() {
+
+  const employeeId = document.getElementById("empId").value;
+  const name = document.getElementById("empName").value;
+  const totalLeave = document.getElementById("empLeave").value;
+
+  fetch(API_URL + "?action=addEmployee", {
+    method: "POST",
+    body: JSON.stringify({ employeeId, name, totalLeave })
+  })
+  .then(res => res.json())
+  .then(data => {
+    alert(data.data);
+    loadEmployees();
+  });
+
+});
+
+/* ================= ADD LEAVE ================= */
+
+document.querySelector(".btn-warning").addEventListener("click", function() {
+
+  const employeeId = document.getElementById("leaveEmployee").value;
+  const date = document.querySelector("input[type='date']").value;
+  const leaveType = document.querySelectorAll("select")[1].value;
+  const reason = document.querySelectorAll("input[type='text']")[2].value;
+
+  fetch(API_URL + "?action=addLeave", {
+    method: "POST",
+    body: JSON.stringify({ employeeId, date, leaveType, reason })
+  })
+  .then(res => res.json())
+  .then(data => {
+    alert(data.data);
+  });
+
+});
+
+/* ================= GET SUMMARY ================= */
+
+document.querySelector(".btn-info").addEventListener("click", function() {
+
+  const employeeId = document.getElementById("summaryEmployee").value;
+
+  fetch(API_URL + "?action=getSummary&employeeId=" + employeeId)
+    .then(res => res.json())
+    .then(data => {
+
+      if (data.success) {
+        const result = data.data;
+
+        const box = document.querySelector(".bg-light");
+        box.innerHTML = `
+          <p><strong>Total Allowed:</strong> ${result.totalAllowed}</p>
+          <p><strong>Total Taken:</strong> ${result.totalTaken}</p>
+          <p><strong>Remaining:</strong> ${result.remaining}</p>
+        `;
+      }
+    });
+
+});
+
+</script>
+
+</body>
+</html>
